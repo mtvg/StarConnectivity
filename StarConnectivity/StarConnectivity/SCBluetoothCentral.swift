@@ -12,7 +12,7 @@ import CoreBluetooth
 public class SCBluetoothCentral :NSObject {
     
     public weak var delegate:SCBluetoothCentralDelegate?
-    let centralPeer:SCPeer
+    public let centralPeer:SCPeer
     
     private let cbCentralManager:CBCentralManager
     private var cbCentralManagerDelegate:CentralManagerDelegate!
@@ -20,7 +20,7 @@ public class SCBluetoothCentral :NSObject {
     
     private var connectedDevices = [Device]()
     
-    init(centralPeer peer:SCPeer) {
+    public init(centralPeer peer:SCPeer) {
         
         cbCentralManager = CBCentralManager(delegate: nil, queue: dispatch_queue_create("starConnectivity_bluetoothCentralQueue", DISPATCH_QUEUE_CONCURRENT))
         centralPeer = peer
@@ -30,11 +30,11 @@ public class SCBluetoothCentral :NSObject {
         cbCentralManager.delegate = cbCentralManagerDelegate
     }
     
-    func sendData(data:NSData, onPriorityQueue priorityQueue:UInt8, toPeers peers:[SCPeer]?=nil, flushQueue:Bool=false) {
+    public func sendData(data:NSData, onPriorityQueue priorityQueue:UInt8, toPeers peers:[SCPeer]?=nil, flushQueue:Bool=false) {
         sendData(data, toPeers: peers, onPriorityQueue: priorityQueue, flushQueue: flushQueue, internalData: false)
     }
     
-    func disconnectPeers(peers:[SCPeer]?=nil) {
+    public func disconnectPeers(peers:[SCPeer]?=nil) {
         for device in connectedDevices {
             if device.peer != nil && (peers == nil || peers!.indexOf({$0 === device.peer!}) != nil) {
                 device.disconnect()

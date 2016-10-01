@@ -13,5 +13,5 @@ public protocol SCBluetoothAdvertiserDelegate: class {
 }
 
 public extension SCBluetoothAdvertiserDelegate {
-    func bluetoothStateUpdated(state:SCBluetoothState) {}
+    public func bluetoothStateUpdated(state:SCBluetoothState) {}
 }

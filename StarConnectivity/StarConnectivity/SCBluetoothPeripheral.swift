@@ -34,7 +34,7 @@ public class SCBluetoothPeripheral : NSObject {
     private var isWriting = false
     private var lastPacketDidNotTransmit = false
     
-    init(peripheralPeer peer:SCPeer, toCentralPeer centralPeer:SCPeer) {
+    public init(peripheralPeer peer:SCPeer, toCentralPeer centralPeer:SCPeer) {
         self.centralPeer = centralPeer
         self.peer = peer
         

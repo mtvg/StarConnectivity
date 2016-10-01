@@ -29,21 +29,21 @@ public class SCPeer {
     private(set) public var discoveryInfo:JSON?
     private(set) public var discoveryData:NSData!
     
-    init() {
+    public init() {
         protocolVersion = SCCommon.STARCONNECTIVITY_PROTOCOL_VERSION
         identifier = NSUUID()
         generateUuidBytes()
         generateDiscoveryData()
     }
     
-    init(withUUID id:NSUUID) {
+    public init(withUUID id:NSUUID) {
         protocolVersion = SCCommon.STARCONNECTIVITY_PROTOCOL_VERSION
         identifier = id
         generateUuidBytes()
         generateDiscoveryData()
     }
     
-    init?(withDiscoveryInfo discoveryInfo:JSON) {
+    public init?(withDiscoveryInfo discoveryInfo:JSON) {
         protocolVersion = SCCommon.STARCONNECTIVITY_PROTOCOL_VERSION
         identifier = NSUUID()
         self.discoveryInfo = discoveryInfo
@@ -53,7 +53,7 @@ public class SCPeer {
         }
     }
     
-    init?(fromDiscoveryData discoveryData:NSData) {
+    public init?(fromDiscoveryData discoveryData:NSData) {
         self.discoveryData = discoveryData
         if discoveryData.length < 17 {
             return nil
@@ -96,6 +96,6 @@ public class SCPeer {
 }
 
 
-func ==(lpeer: SCPeer, rpeer: SCPeer) -> Bool {
+public func ==(lpeer: SCPeer, rpeer: SCPeer) -> Bool {
     return lpeer.discoveryData.isEqualToData(rpeer.discoveryData)
 }

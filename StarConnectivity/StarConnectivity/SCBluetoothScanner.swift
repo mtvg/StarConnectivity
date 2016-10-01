@@ -25,7 +25,7 @@ public class SCBluetoothScanner : NSObject {
     
     private var availableCentrals = [ScannedCentral]()
     
-    init(serviceToBrowse service:SCUUID) {
+    public init(serviceToBrowse service:SCUUID) {
         scannedCentralService = service
         
         cbCentralManager = CBCentralManager()
@@ -34,7 +34,7 @@ public class SCBluetoothScanner : NSObject {
         cbCentralManager.delegate = cbCentralManagerDelegate
     }
     
-    func startScanning() {
+    public func startScanning() {
         scanningRequested = true
         if cbCentralManager.state == .PoweredOn {
             isScanning = true
@@ -43,7 +43,7 @@ public class SCBluetoothScanner : NSObject {
         }
     }
     
-    func stopScanning() {
+    public func stopScanning() {
         isScanning = false
         scanningRequested = false
         cbCentralManager.stopScan()

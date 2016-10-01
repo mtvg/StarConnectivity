@@ -16,8 +16,8 @@ public protocol SCBluetoothPeripheralDelegate: class {
 }
 
 public extension SCBluetoothPeripheralDelegate {
-    func peripheral(peripheral: SCBluetoothPeripheral, didConnectCentral central: SCPeer) {}
-    func peripheral(peripheral: SCBluetoothPeripheral, didDisconnectCentral central: SCPeer, withError error:NSError?) {}
-    func peripheral(peripheral: SCBluetoothPeripheral, didReceivedData data: NSData, onPriorityQueue priorityQueue:UInt8, fromCentral central:SCPeer) {}
-    func bluetoothStateUpdated(state:SCBluetoothState) {}
+    public func peripheral(peripheral: SCBluetoothPeripheral, didConnectCentral central: SCPeer) {}
+    public func peripheral(peripheral: SCBluetoothPeripheral, didDisconnectCentral central: SCPeer, withError error:NSError?) {}
+    public func peripheral(peripheral: SCBluetoothPeripheral, didReceivedData data: NSData, onPriorityQueue priorityQueue:UInt8, fromCentral central:SCPeer) {}
+    public func bluetoothStateUpdated(state:SCBluetoothState) {}
 }

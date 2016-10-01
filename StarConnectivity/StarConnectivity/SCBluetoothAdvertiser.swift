@@ -23,7 +23,7 @@ public class SCBluetoothAdvertiser : NSObject {
     private var advertisingRequested = false
     private var servicesInitialised = false
     
-    init(centralPeer peer:SCPeer, serviceUUID uuid: SCUUID) {
+    public init(centralPeer peer:SCPeer, serviceUUID uuid: SCUUID) {
         self.serviceUUID = uuid
         self.peer = peer
         
