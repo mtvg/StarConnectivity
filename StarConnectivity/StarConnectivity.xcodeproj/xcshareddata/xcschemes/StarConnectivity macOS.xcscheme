@@ -14,7 +14,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "14ADBF071D9DBBD400BBE46E"
+               BlueprintIdentifier = "1438F9241DA42E200069244B"
                BuildableName = "StarConnectivity.framework"
                BlueprintName = "StarConnectivity-macOS"
                ReferencedContainer = "container:StarConnectivity.xcodeproj">
@@ -45,7 +45,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "14ADBF071D9DBBD400BBE46E"
+            BlueprintIdentifier = "1438F9241DA42E200069244B"
             BuildableName = "StarConnectivity.framework"
             BlueprintName = "StarConnectivity-macOS"
             ReferencedContainer = "container:StarConnectivity.xcodeproj">
@@ -63,7 +63,7 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "14ADBF071D9DBBD400BBE46E"
+            BlueprintIdentifier = "1438F9241DA42E200069244B"
             BuildableName = "StarConnectivity.framework"
             BlueprintName = "StarConnectivity-macOS"
             ReferencedContainer = "container:StarConnectivity.xcodeproj">

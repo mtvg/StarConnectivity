@@ -2,7 +2,7 @@
 //  StarConnectivity.h
 //  StarConnectivity
 //
-//  Created by Mathieu Vignau on 9/29/16.
+//  Created by Mathieu Vignau on 10/4/16.
 //  Copyright © 2016 RED. All rights reserved.
 //
 
