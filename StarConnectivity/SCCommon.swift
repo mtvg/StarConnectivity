@@ -16,8 +16,8 @@ struct SCCommon {
     static let STARCONNECTIVITY_PROTOCOL_VERSION:UInt8 = 1
     
     static let INTERNAL_CONNECTION_QUEUE:UInt8 = 0xF
-    static let INTERNAL_CENTRAL_DISCONNECTION_DATA = NSData(bytes: [Int(0x00), Int(0xFF)], length: 2)
-    static let INTERNAL_PERIPHERAL_DISCONNECTION_REQUEST_DATA = NSData(bytes: [Int(0xFF), Int(0xFF)], length: 2)
+    static let INTERNAL_CENTRAL_DISCONNECTION_DATA = Data(bytes: [0x00, 0xFF])
+    static let INTERNAL_PERIPHERAL_DISCONNECTION_REQUEST_DATA = Data(bytes: [0xFF, 0xFF])
 }
 
 
@@ -25,6 +25,5 @@ public enum SCBluetoothState:Int {
     case Unknown = 0, Resetting, Unsupported, Unauthorized, PoweredOff, PoweredOn
 }
 
-public typealias SCUUID = CBUUID
-
+public typealias SCPriorityQueue = UInt8
 

@@ -9,15 +9,15 @@
 import Foundation
 
 public protocol SCBluetoothCentralDelegate: class {
-    func central(central: SCBluetoothCentral, didConnectPeripheral peripheral: SCPeer)
-    func central(central: SCBluetoothCentral, didDisconnectPeripheral peripheral: SCPeer)
-    func central(central: SCBluetoothCentral, didReceivedData data: NSData, onPriorityQueue priorityQueue:UInt8, fromPeripheral peripheral:SCPeer)
-    func bluetoothStateUpdated(state:SCBluetoothState)
+    func central(_ central: SCBluetoothCentral, didConnect peripheral: SCPeer)
+    func central(_ central: SCBluetoothCentral, didDisconnect peripheral: SCPeer)
+    func central(_ central: SCBluetoothCentral, didReceive data: Data, on priorityQueue:SCPriorityQueue, from peripheral:SCPeer)
+    func central(_ central: SCBluetoothCentral, didUpdateBluetoothState state:SCBluetoothState)
 }
 
 public extension SCBluetoothCentralDelegate {
-    public func central(central: SCBluetoothCentral, didConnectPeripheral peripheral: SCPeer) {}
-    public func central(central: SCBluetoothCentral, didDisconnectPeripheral peripheral: SCPeer) {}
-    public func central(central: SCBluetoothCentral, didReceivedData data: NSData, onPriorityQueue priorityQueue:UInt8, fromPeripheral peripheral:SCPeer) {}
-    public func bluetoothStateUpdated(state:SCBluetoothState) {}
+    func central(_ central: SCBluetoothCentral, didConnect peripheral: SCPeer) {}
+    func central(_ central: SCBluetoothCentral, didDisconnect peripheral: SCPeer) {}
+    func central(_ central: SCBluetoothCentral, didReceive data: Data, on priorityQueue:SCPriorityQueue, from peripheral:SCPeer) {}
+    func central(_ central: SCBluetoothCentral, didUpdateBluetoothState state:SCBluetoothState){}
 }

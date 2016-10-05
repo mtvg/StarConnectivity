@@ -9,9 +9,9 @@
 import Foundation
 
 public protocol SCBluetoothAdvertiserDelegate: class {
-    func bluetoothStateUpdated(state:SCBluetoothState)
+    func advertiser(_ advertiser: SCBluetoothAdvertiser, didUpdateBluetoothState state:SCBluetoothState)
 }
 
 public extension SCBluetoothAdvertiserDelegate {
-    public func bluetoothStateUpdated(state:SCBluetoothState) {}
+    func advertiser(_ advertiser: SCBluetoothAdvertiser, didUpdateBluetoothState state:SCBluetoothState) {}
 }

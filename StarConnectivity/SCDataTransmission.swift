@@ -12,8 +12,8 @@ internal class SCDataTransmission: NSObject {
     
     private let MAX_ERROR = 5
     private let PACKET_SIZE = 100
-    private var transmissionQueues = [UInt8:SCTransmissionQueue]()
-    private var transmissionQueuesKeys = [UInt8]()
+    private var transmissionQueues = [SCPriorityQueue:SCTransmissionQueue]()
+    private var transmissionQueuesKeys = [SCPriorityQueue]()
     
     private var lastTransmitedQueue:SCTransmissionQueue?
     private var lastTransmitedLength = 0
@@ -90,7 +90,7 @@ internal class SCDataTransmission: NSObject {
         return nil
     }
     
-    func addToQueue(data:Data, onPriorityQueue priorityQueue:UInt8, flushQueue:Bool, internalData:Bool, callback:((Bool) -> Void)?) {
+    func add(data:Data, to priorityQueue:SCPriorityQueue, flushQueue:Bool, internalData:Bool, callback:((Bool) -> Void)?) {
         
         if priorityQueue > 0xF {
             return

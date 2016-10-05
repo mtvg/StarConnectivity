@@ -25,10 +25,10 @@ public class SCBluetoothScanner : NSObject {
     
     private var availableCentrals = [ScannedCentral]()
     
-    public init(serviceToBrowse service:SCUUID) {
-        scannedCentralService = service
+    public init(serviceToBrowse service:UUID) {
+        scannedCentralService = CBUUID(nsuuid: service)
         
-        cbCentralManager = CBCentralManager()
+        cbCentralManager = CBCentralManager(delegate: nil, queue: DispatchQueue(label: "starConnectivity_bluetoothScannerQueue"), options: [CBPeripheralManagerOptionShowPowerAlertKey:true])
         super.init()
         cbCentralManagerDelegate = CentralManagerDelegate(outer: self)
         cbCentralManager.delegate = cbCentralManagerDelegate
@@ -39,7 +39,10 @@ public class SCBluetoothScanner : NSObject {
         if cbCentralManager.state == .poweredOn {
             isScanning = true
             cbCentralManager.scanForPeripherals(withServices: [scannedCentralService], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
-            centralScanTimeoutTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(checkPeripheralScanTimeout), userInfo: nil, repeats: true)
+            //centralScanTimeoutTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(checkPeripheralScanTimeout), userInfo: nil, repeats: true)
+            
+            centralScanTimeoutTimer = Timer(timeInterval: 1.0, target: self, selector: #selector(checkPeripheralScanTimeout), userInfo: nil, repeats: true)
+            RunLoop.main.add(centralScanTimeoutTimer!, forMode: RunLoopMode.commonModes)
         }
     }
     
@@ -51,18 +54,17 @@ public class SCBluetoothScanner : NSObject {
     }
     
     private func didFindCentral(_ central:SCPeer) {
-        delegate?.scanner(self, didFindCentral: central)
+        delegate?.scanner(self, didFind: central)
     }
     
-    private func didRefindCentral(_
-        central:SCPeer) {
+    private func didRefindCentral(_ central:SCPeer) {
         if allowDuplicatesCentralScan {
             didFindCentral(central)
         }
     }
     
     private func didLooseCentral(_ central:SCPeer) {
-        delegate?.scanner(self, didLooseCentral: central)
+        delegate?.scanner(self, didLoose: central)
     }
     
     @objc private func checkPeripheralScanTimeout() {
@@ -89,7 +91,7 @@ public class SCBluetoothScanner : NSObject {
             if central.state == .poweredOn && outer.scanningRequested {
                 outer.startScanning()
             }
-            outer.delegate?.bluetoothStateUpdated(state: SCBluetoothState(rawValue: central.state.rawValue)!)
+            outer.delegate?.scanner(outer, didUpdateBluetoothState: SCBluetoothState(rawValue: central.state.rawValue)!)
         }
         
         func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {

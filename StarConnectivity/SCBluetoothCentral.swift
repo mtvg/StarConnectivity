@@ -22,42 +22,42 @@ public class SCBluetoothCentral :NSObject {
     
     public init(centralPeer peer:SCPeer) {
         
-        cbCentralManager = CBCentralManager(delegate: nil, queue: dispatch_queue_create("starConnectivity_bluetoothCentralQueue", DISPATCH_QUEUE_CONCURRENT))
+        cbCentralManager = CBCentralManager(delegate: nil, queue: DispatchQueue(label: "starConnectivity_bluetoothCentralQueue"), options: [CBPeripheralManagerOptionShowPowerAlertKey:true])
         centralPeer = peer
-        scannedPeripheralService = CBUUID(NSUUID: peer.identifier)
+        scannedPeripheralService = CBUUID(nsuuid: peer.identifier)
         super.init()
         cbCentralManagerDelegate = CentralManagerDelegate(outer: self)
         cbCentralManager.delegate = cbCentralManagerDelegate
     }
     
-    public func sendData(data:NSData, onPriorityQueue priorityQueue:UInt8, toPeers peers:[SCPeer]?=nil, flushQueue:Bool=false) {
-        sendData(data, toPeers: peers, onPriorityQueue: priorityQueue, flushQueue: flushQueue, internalData: false)
+    public func send(data:Data, on priorityQueue:SCPriorityQueue, to peers:[SCPeer]?=nil, flushQueue:Bool=false) {
+        send(data: data, to: peers, on: priorityQueue, flushQueue: flushQueue, internalData: false)
     }
     
-    public func disconnectPeers(peers:[SCPeer]?=nil) {
+    public func disconnect(peers:[SCPeer]?=nil) {
         for device in connectedDevices {
-            if device.peer != nil && (peers == nil || peers!.indexOf({$0 === device.peer!}) != nil) {
+            if device.peer != nil && (peers == nil || peers!.index(where: {$0 === device.peer!}) != nil) {
                 device.disconnect()
             }
         }
     }
     
-    private func sendData(data:NSData, toPeers peers:[SCPeer]?, onPriorityQueue priorityQueue:UInt8, flushQueue:Bool, internalData:Bool) {
+    private func send(data:Data, to peers:[SCPeer]?, on priorityQueue:SCPriorityQueue, flushQueue:Bool, internalData:Bool) {
         for device in connectedDevices {
-            if device.peer != nil && (peers == nil || peers!.indexOf({$0 === device.peer!}) != nil) {
-                device.sendData(data, onPriorityQueue: priorityQueue, flushQueue: flushQueue, internalData: internalData)
+            if device.peer != nil && (peers == nil || peers!.index(where: {$0 === device.peer!}) != nil) {
+                device.send(data: data, on: priorityQueue, flushQueue: flushQueue, internalData: internalData)
             }
         }
     }
     
-    private func removePeripheral(peripheral:CBPeripheral) {
+    private func remove(peripheral:CBPeripheral) {
         
-        if let dIndex = connectedDevices.indexOf({$0.peripheral == peripheral}) {
+        if let dIndex = connectedDevices.index(where: {$0.peripheral == peripheral}) {
             if let peer = connectedDevices[dIndex].peer {
-                delegate?.central(self, didDisconnectPeripheral: peer)
+                delegate?.central(self, didDisconnect: peer)
             }
             connectedDevices[dIndex].peer = nil
-            connectedDevices.removeAtIndex(dIndex)
+            connectedDevices.remove(at: dIndex)
         }
         
     }
@@ -90,21 +90,21 @@ public class SCBluetoothCentral :NSObject {
         }
         
         
-        func sendData(data:NSData, onPriorityQueue priorityQueue:UInt8, flushQueue:Bool=false, internalData:Bool=false, callback:(Bool -> Void)?=nil) {
-            transmission.addToQueue(data, onPriorityQueue: priorityQueue, flushQueue: flushQueue, internalData: internalData, callback: callback)
+        func send(data:Data, on priorityQueue:SCPriorityQueue, flushQueue:Bool=false, internalData:Bool=false, callback:((Bool) -> Void)?=nil) {
+            transmission.add(data: data, to: priorityQueue, flushQueue: flushQueue, internalData: internalData, callback: callback)
             flushData()
         }
         
-        func onReceptionData(data:NSData, queue:UInt8) {
+        func onReceptionData(data:Data, queue:SCPriorityQueue) {
             if peer == nil {
                 return
             }
-            outer.delegate?.central(outer, didReceivedData: data, onPriorityQueue: queue, fromPeripheral: peer!)
+            outer.delegate?.central(outer, didReceive: data, on: queue, from: peer!)
         }
         
-        func onReceptionInternalData(data:NSData, queue:UInt8) {
-            if queue == SCCommon.INTERNAL_CONNECTION_QUEUE && data.isEqualToData(SCCommon.INTERNAL_PERIPHERAL_DISCONNECTION_REQUEST_DATA) {
-                disconnect(false)
+        func onReceptionInternalData(data:Data, queue:SCPriorityQueue) {
+            if queue == SCCommon.INTERNAL_CONNECTION_QUEUE && data == SCCommon.INTERNAL_PERIPHERAL_DISCONNECTION_REQUEST_DATA {
+                disconnect(soft: false)
             }
         }
         
@@ -114,39 +114,39 @@ public class SCBluetoothCentral :NSObject {
             }
             
             
-            if let packet = transmission.getNextPacket(repeatLastPacket) {
-                peripheral.writeValue(packet, forCharacteristic: rxchar, type: .WithResponse)
+            if let packet = transmission.getNextPacket(repeatLastPacket: repeatLastPacket) {
+                peripheral.writeValue(packet, for: rxchar, type: .withResponse)
                 isWriting = true
             }
         }
         
         func disconnect(soft:Bool=true) {
             if soft {
-                sendData(SCCommon.INTERNAL_CENTRAL_DISCONNECTION_DATA, onPriorityQueue: SCCommon.INTERNAL_CONNECTION_QUEUE, flushQueue: false, internalData: true)
+                send(data: SCCommon.INTERNAL_CENTRAL_DISCONNECTION_DATA, on: SCCommon.INTERNAL_CONNECTION_QUEUE, flushQueue: false, internalData: true)
                 // TODO: Hard disconnect on timeout
             } else {
-                peripheral.setNotifyValue(false, forCharacteristic: txchar)
+                peripheral.setNotifyValue(false, for: txchar)
             }
             
         }
         
-        @objc func peripheral(peripheral: CBPeripheral, didWriteValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+        func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
             isWriting = false
-            flushData(error != nil)
+            flushData(repeatLastPacket: error != nil)
         }
         
-        @objc func peripheral(peripheral: CBPeripheral, didUpdateValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
-            if characteristic == txchar && error == nil && characteristic.value?.length > 1 {
-                reception.parsePacket(characteristic.value!)
+        func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+            if let charval = characteristic.value, characteristic == txchar && error == nil && charval.count > 1 {
+                reception.parse(packet: charval)
             }
         }
         
-        @objc func peripheral(peripheral: CBPeripheral, didUpdateNotificationStateForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
+        func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
             if characteristic == txchar {
                 if error == nil {
                     outer.cbCentralManager.cancelPeripheralConnection(peripheral)
                 } else {
-                    outer.removePeripheral(peripheral)
+                    outer.remove(peripheral: peripheral)
                 }
             }
         }
@@ -165,43 +165,41 @@ public class SCBluetoothCentral :NSObject {
             super.init()
         }
         
-        @objc func centralManagerDidUpdateState(central: CBCentralManager) {
-            if central.state == .PoweredOn {
-                central.scanForPeripheralsWithServices([outer.scannedPeripheralService], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
+        func centralManagerDidUpdateState(_ central: CBCentralManager) {
+            if central.state == .poweredOn {
+                central.scanForPeripherals(withServices: [outer.scannedPeripheralService], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
             }
-            outer.delegate?.bluetoothStateUpdated(SCBluetoothState(rawValue: central.state.rawValue)!)
+            outer.delegate?.central(outer, didUpdateBluetoothState: SCBluetoothState(rawValue: central.state.rawValue)!)
         }
         
-        @objc func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) {
-            if discoveredPeripherals.indexOf(peripheral) != nil {
+        func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+            if discoveredPeripherals.index(of: peripheral) != nil {
                 return
             }
             peripheral.delegate = self
             discoveredPeripherals.append(peripheral)
-            central.connectPeripheral(peripheral, options: nil)
+            central.connect(peripheral, options: nil)
         }
         
-        @objc func centralManager(central: CBCentralManager, didConnectPeripheral peripheral: CBPeripheral) {
+        func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
             peripheral.discoverServices(nil)
         }
         
-        @objc func centralManager(central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: NSError?) {
-            
-            if let pIndex = discoveredPeripherals.indexOf(peripheral) {
-                discoveredPeripherals.removeAtIndex(pIndex)
+        func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+            if let pIndex = discoveredPeripherals.index(of: peripheral) {
+                discoveredPeripherals.remove(at: pIndex)
             }
             
-            outer.removePeripheral(peripheral)
+            outer.remove(peripheral: peripheral)
         }
         
         // Peripheral connection only handeling
         
-        @objc func peripheral(peripheral: CBPeripheral, didDiscoverServices error: NSError?) {
-            
+        func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
             if peripheral.services != nil {
                 for service in peripheral.services! {
-                    if service.UUID == outer.scannedPeripheralService {
-                        peripheral.discoverCharacteristics(nil, forService: service)
+                    if service.uuid == outer.scannedPeripheralService {
+                        peripheral.discoverCharacteristics(nil, for: service)
                         return
                     }
                 }
@@ -210,7 +208,7 @@ public class SCBluetoothCentral :NSObject {
             outer.cbCentralManager.cancelPeripheralConnection(peripheral)
         }
         
-        @objc func peripheral(peripheral: CBPeripheral, didDiscoverCharacteristicsForService service: CBService, error: NSError?) {
+        func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
             if service.characteristics != nil {
                 
                 var txchar:CBCharacteristic?
@@ -218,13 +216,13 @@ public class SCBluetoothCentral :NSObject {
                 var infochar:CBCharacteristic?
                 
                 for characteristic in service.characteristics! {
-                    if characteristic.UUID == SCCommon.TX_CHARACTERISTIC_UUID {
+                    if characteristic.uuid == SCCommon.TX_CHARACTERISTIC_UUID {
                         txchar = characteristic
                     }
-                    if characteristic.UUID == SCCommon.RX_CHARACTERISTIC_UUID {
+                    if characteristic.uuid == SCCommon.RX_CHARACTERISTIC_UUID {
                         rxchar = characteristic
                     }
-                    if characteristic.UUID == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID {
+                    if characteristic.uuid == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID {
                         infochar = characteristic
                     }
                 }
@@ -233,7 +231,7 @@ public class SCBluetoothCentral :NSObject {
                 if txchar != nil && rxchar != nil && infochar != nil {
                     let device = Device(outer: outer, peripheral: peripheral, rxchar: rxchar!, txchar: txchar!, infochar: infochar!)
                     outer.connectedDevices.append(device)
-                    peripheral.readValueForCharacteristic(device.infochar)
+                    peripheral.readValue(for: device.infochar)
                     
                     return
                 }
@@ -244,11 +242,11 @@ public class SCBluetoothCentral :NSObject {
             
         }
         
-        @objc func peripheral(peripheral: CBPeripheral, didUpdateValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
-            if let dIndex = outer.connectedDevices.indexOf({$0.peripheral == peripheral}) {
+        func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+            if let dIndex = outer.connectedDevices.index(where: {$0.peripheral == peripheral}) {
                 let device = outer.connectedDevices[dIndex]
                 if characteristic == device.infochar && characteristic.value != nil {
-                    peripheral.setNotifyValue(true, forCharacteristic: device.txchar)
+                    peripheral.setNotifyValue(true, for: device.txchar)
                     return
                 }
             }
@@ -256,15 +254,14 @@ public class SCBluetoothCentral :NSObject {
             outer.cbCentralManager.cancelPeripheralConnection(peripheral)
         }
         
-        @objc private func peripheral(peripheral: CBPeripheral, didUpdateNotificationStateForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
-            
-            if let dIndex = outer.connectedDevices.indexOf({$0.peripheral == peripheral}) where error == nil {
+        func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
+            if let dIndex = outer.connectedDevices.index(where: {$0.peripheral == peripheral}), error == nil {
                 let device = outer.connectedDevices[dIndex]
                 if characteristic == device.txchar && characteristic.isNotifying {
                     if let peer = SCPeer(fromDiscoveryData: device.infochar.value!) {
                         device.peer = peer
                         peripheral.delegate = device
-                        outer.delegate?.central(outer, didConnectPeripheral: peer)
+                        outer.delegate?.central(outer, didConnect: peer)
                         
                         return
                     }

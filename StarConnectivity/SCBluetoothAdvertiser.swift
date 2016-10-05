@@ -13,7 +13,7 @@ public class SCBluetoothAdvertiser : NSObject {
     
     public weak var delegate:SCBluetoothAdvertiserDelegate?
     
-    public let serviceUUID:SCUUID
+    public let serviceUUID:CBUUID
     public let peer:SCPeer
     
     private let advData:[String:Any]
@@ -23,8 +23,8 @@ public class SCBluetoothAdvertiser : NSObject {
     private var advertisingRequested = false
     private var servicesInitialised = false
     
-    public init(centralPeer peer:SCPeer, serviceUUID uuid: SCUUID) {
-        self.serviceUUID = uuid
+    public init(centralPeer peer:SCPeer, serviceUUID uuid: UUID) {
+        self.serviceUUID = CBUUID(nsuuid: uuid)
         self.peer = peer
         
         // generating unique name for this advertising session, so Browser can distinguish multiple sessions from same device
@@ -75,7 +75,7 @@ public class SCBluetoothAdvertiser : NSObject {
         
         func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
             
-            outer.delegate?.bluetoothStateUpdated(state: SCBluetoothState(rawValue: peripheral.state.rawValue)!)
+            outer.delegate?.advertiser(outer, didUpdateBluetoothState: SCBluetoothState(rawValue: peripheral.state.rawValue)!)
             
             if oldPeripheralState == peripheral.state.rawValue {
                 return

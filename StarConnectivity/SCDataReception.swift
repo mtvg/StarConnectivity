@@ -9,19 +9,19 @@
 import Foundation
 
 internal class SCDataReception: NSObject {
-    var onData:((Data, UInt8)->())?
-    var onInternalData:((Data, UInt8)->())?
+    var onData:((Data, SCPriorityQueue)->())?
+    var onInternalData:((Data, SCPriorityQueue)->())?
     
-    private var receptionQueues = [UInt8:SCReceptionQueue]()
+    private var receptionQueues = [SCPriorityQueue:SCReceptionQueue]()
     
-    func parsePacket(data:Data) {
+    func parse(packet data:Data) {
         var packetPointer = 0
         
         var header:UInt8 = 0
         data.copyBytes(to: &header, count: 1)
         packetPointer += 1
         
-        var priorityQueue:UInt8 = header >> 4
+        var priorityQueue:SCPriorityQueue = header >> 4
         if header&2 == 2 {
             priorityQueue += 0x10
         }

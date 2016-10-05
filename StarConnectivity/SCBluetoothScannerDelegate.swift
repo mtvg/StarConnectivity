@@ -9,13 +9,13 @@
 import Foundation
 
 public protocol SCBluetoothScannerDelegate: class {
-    func scanner(_ scanner: SCBluetoothScanner, didFindCentral central: SCPeer)
-    func scanner(_ scanner: SCBluetoothScanner, didLooseCentral central: SCPeer)
-    func bluetoothStateUpdated(state:SCBluetoothState)
+    func scanner(_ scanner: SCBluetoothScanner, didFind central: SCPeer)
+    func scanner(_ scanner: SCBluetoothScanner, didLoose central: SCPeer)
+    func scanner(_ scanner: SCBluetoothScanner, didUpdateBluetoothState state:SCBluetoothState)
 }
 
 public extension SCBluetoothScannerDelegate {
-    public func scanner(_ scanner: SCBluetoothScanner, didFindCentral central: SCPeer) {}
-    public func scanner(_ scanner: SCBluetoothScanner, didLooseCentral central: SCPeer) {}
-    public func bluetoothStateUpdated(state:SCBluetoothState) {}
+    func scanner(_ scanner: SCBluetoothScanner, didFind central: SCPeer) {}
+    func scanner(_ scanner: SCBluetoothScanner, didLoose central: SCPeer) {}
+    func scanner(_ scanner: SCBluetoothScanner, didUpdateBluetoothState state:SCBluetoothState) {}
 }

@@ -24,30 +24,27 @@ public class SCPeer {
     static private var savedCBCentralPeers = [CBCentral:SCPeer]()
     
     public let protocolVersion:UInt8
-    public let identifier:NSUUID
-    private(set) public var identifierBytes = [UInt8](repeating: 0, count: 16)
+    private(set) public var identifier:UUID
+    
     private(set) public var discoveryInfo:JSON?
     private(set) public var discoveryData:Data!
     
     public init() {
         protocolVersion = SCCommon.STARCONNECTIVITY_PROTOCOL_VERSION
-        identifier = NSUUID()
-        generateUuidBytes()
+        identifier = UUID()
         _ = generateDiscoveryData()
     }
     
-    public init(withUUID id:NSUUID) {
+    public init(withUUID id:UUID) {
         protocolVersion = SCCommon.STARCONNECTIVITY_PROTOCOL_VERSION
         identifier = id
-        generateUuidBytes()
         _ = generateDiscoveryData()
     }
     
     public init?(withDiscoveryInfo discoveryInfo:JSON) {
         protocolVersion = SCCommon.STARCONNECTIVITY_PROTOCOL_VERSION
-        identifier = NSUUID()
+        identifier = UUID()
         self.discoveryInfo = discoveryInfo
-        generateUuidBytes()
         if !generateDiscoveryData() {
             return nil
         }
@@ -59,13 +56,11 @@ public class SCPeer {
             return nil
         }
         
-        discoveryData.copyBytes(to: &identifierBytes, count: 16)
-        var protocolBytes = [UInt8](repeating: 0, count: 1)
-        discoveryData.copyBytes(to: &protocolBytes, count: 1)
-        protocolVersion = protocolBytes[0]
-        
-        
-        identifier = NSUUID(uuidBytes: identifierBytes)
+        identifier = UUID()
+        _ = discoveryData.copyBytes(to: UnsafeMutableBufferPointer(start: &identifier, count:1), from: 0..<16)
+        var protocolByte:UInt8 = 0
+        discoveryData.copyBytes(to: &protocolByte, from: 16..<17)
+        protocolVersion = protocolByte
         
         if discoveryData.count > 17 {
             discoveryInfo = JSON(data: discoveryData.subdata(in: 17..<discoveryData.endIndex))
@@ -73,13 +68,9 @@ public class SCPeer {
         
     }
     
-    private func generateUuidBytes() {
-        identifier.getBytes(&identifierBytes)
-    }
-    
     private func generateDiscoveryData() -> Bool {
         var buildDiscoveryData = Data()
-        buildDiscoveryData.append(identifierBytes, count: 16)
+        buildDiscoveryData.append(UnsafeBufferPointer(start: &identifier, count: 1))
         buildDiscoveryData.append(protocolVersion)
         
         if discoveryInfo != nil, let infoData = try? discoveryInfo?.rawData() {
