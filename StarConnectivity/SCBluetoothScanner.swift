@@ -19,7 +19,7 @@ public class SCBluetoothScanner : NSObject {
     
     public  var allowDuplicatesCentralScan = false
     public  var centralScanTimeout:Double = 10
-    private var centralScanTimeoutTimer:NSTimer?
+    private var centralScanTimeoutTimer:Timer?
     private(set) public var isScanning = false
     private var scanningRequested = false
     
@@ -36,10 +36,10 @@ public class SCBluetoothScanner : NSObject {
     
     public func startScanning() {
         scanningRequested = true
-        if cbCentralManager.state == .PoweredOn {
+        if cbCentralManager.state == .poweredOn {
             isScanning = true
-            cbCentralManager.scanForPeripheralsWithServices([scannedCentralService], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
-            centralScanTimeoutTimer = NSTimer.scheduledTimerWithTimeInterval(1.0, target: self, selector: #selector(checkPeripheralScanTimeout), userInfo: nil, repeats: true)
+            cbCentralManager.scanForPeripherals(withServices: [scannedCentralService], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
+            centralScanTimeoutTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(checkPeripheralScanTimeout), userInfo: nil, repeats: true)
         }
     }
     
@@ -50,24 +50,25 @@ public class SCBluetoothScanner : NSObject {
         centralScanTimeoutTimer?.invalidate()
     }
     
-    private func didFindCentral(central:SCPeer) {
+    private func didFindCentral(_ central:SCPeer) {
         delegate?.scanner(self, didFindCentral: central)
     }
     
-    private func didRefindCentral(central:SCPeer) {
+    private func didRefindCentral(_
+        central:SCPeer) {
         if allowDuplicatesCentralScan {
             didFindCentral(central)
         }
     }
     
-    private func didLooseCentral(central:SCPeer) {
+    private func didLooseCentral(_ central:SCPeer) {
         delegate?.scanner(self, didLooseCentral: central)
     }
     
     @objc private func checkPeripheralScanTimeout() {
-        while let index = availableCentrals.indexOf({$0.lastSeen.timeIntervalSinceNow < -centralScanTimeout}) {
+        while let index = availableCentrals.index(where: {$0.lastSeen.timeIntervalSinceNow < -centralScanTimeout}) {
             didLooseCentral(availableCentrals[index].peer)
-            availableCentrals.removeAtIndex(index)
+            availableCentrals.remove(at: index)
         }
     }
     
@@ -84,22 +85,21 @@ public class SCBluetoothScanner : NSObject {
             super.init()
         }
         
-        @objc func centralManagerDidUpdateState(central: CBCentralManager) {
-            if central.state == .PoweredOn && outer.scanningRequested {
+        func centralManagerDidUpdateState(_ central: CBCentralManager) {
+            if central.state == .poweredOn && outer.scanningRequested {
                 outer.startScanning()
             }
-            outer.delegate?.bluetoothStateUpdated(SCBluetoothState(rawValue: central.state.rawValue)!)
+            outer.delegate?.bluetoothStateUpdated(state: SCBluetoothState(rawValue: central.state.rawValue)!)
         }
         
-        @objc func centralManager(central: CBCentralManager, didDiscoverPeripheral peripheral: CBPeripheral, advertisementData: [String : AnyObject], RSSI: NSNumber) {
+        func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
 
             if let pid = advertisementData[CBAdvertisementDataLocalNameKey] as? String {
-                
-                if pid.characters.count < 3 || pid.substringToIndex(pid.startIndex.advancedBy(3)) != "SC#" {
+                if pid.characters.count < 3 || pid.substring(to: pid.index(pid.startIndex, offsetBy: 3)) != "SC#" {
                     return
                 }
                 
-                if let index = outer.availableCentrals.indexOf({$0.peripheral == peripheral}) {
+                if let index = outer.availableCentrals.index(where: {$0.peripheral == peripheral}) {
                     
                     if outer.availableCentrals[index].advertisingUID == pid {
                         outer.availableCentrals[index].lastSeen = NSDate()
@@ -107,30 +107,30 @@ public class SCBluetoothScanner : NSObject {
                         return
                     } else {
                         outer.didLooseCentral(outer.availableCentrals[index].peer)
-                        outer.availableCentrals.removeAtIndex(index)
+                        outer.availableCentrals.remove(at: index)
                     }
                 }
                 
-                if discoveredPeripherals.indexOf(peripheral) != nil {
+                if discoveredPeripherals.index(of: peripheral) != nil {
                     return
                 }
                 
                 peripheral.delegate = self
                 discoveredPeripherals.append(peripheral)
                 discoveredPeripheralsID[peripheral] = pid
-                central.connectPeripheral(peripheral, options: nil)
+                central.connect(peripheral, options: nil)
             }
         }
         
-        @objc func centralManager(central: CBCentralManager, didConnectPeripheral peripheral: CBPeripheral) {
+        func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
             peripheral.discoverServices([outer.scannedCentralService])
         }
         
-        @objc func peripheral(peripheral: CBPeripheral, didDiscoverServices error: NSError?) {
+        func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
             if peripheral.services != nil {
                 for service in peripheral.services! {
-                    if service.UUID == outer.scannedCentralService {
-                        peripheral.discoverCharacteristics(nil, forService: service)
+                    if service.uuid == outer.scannedCentralService {
+                        peripheral.discoverCharacteristics(nil, for: service)
                         return
                     }
                 }
@@ -138,12 +138,12 @@ public class SCBluetoothScanner : NSObject {
             outer.cbCentralManager.cancelPeripheralConnection(peripheral)
         }
         
-        @objc func peripheral(peripheral: CBPeripheral, didDiscoverCharacteristicsForService service: CBService, error: NSError?) {
+        func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
             
             if service.characteristics != nil {
                 for characteristic in service.characteristics! {
-                    if characteristic.UUID == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID {
-                        peripheral.readValueForCharacteristic(characteristic)
+                    if characteristic.uuid == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID {
+                        peripheral.readValue(for: characteristic)
                         return
                     }
                 }
@@ -152,8 +152,8 @@ public class SCBluetoothScanner : NSObject {
             outer.cbCentralManager.cancelPeripheralConnection(peripheral)
         }
         
-        @objc func peripheral(peripheral: CBPeripheral, didUpdateValueForCharacteristic characteristic: CBCharacteristic, error: NSError?) {
-            if characteristic.UUID == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID && characteristic.value != nil && outer.isScanning && error == nil {
+        func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+            if characteristic.uuid == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID && characteristic.value != nil && outer.isScanning && error == nil {
                 if let peer = SCPeer(fromDiscoveryData: characteristic.value!) {
                     let p = ScannedCentral(peer: peer, peripheral: peripheral, lastSeen: NSDate(), advertisingUID: discoveredPeripheralsID[peripheral]!)
                     outer.availableCentrals.append(p)
@@ -164,10 +164,10 @@ public class SCBluetoothScanner : NSObject {
             outer.cbCentralManager.cancelPeripheralConnection(peripheral)
         }
         
-        @objc func centralManager(central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: NSError?) {
-            if let index = discoveredPeripherals.indexOf(peripheral) {
-                discoveredPeripherals.removeAtIndex(index)
-                discoveredPeripheralsID.removeValueForKey(peripheral)
+        func centralManager(_ central: CBCentralManager, didDisconnectPeripheral peripheral: CBPeripheral, error: Error?) {
+            if let index = discoveredPeripherals.index(of: peripheral) {
+                discoveredPeripherals.remove(at: index)
+                discoveredPeripheralsID.removeValue(forKey: peripheral)
             }
         }
         

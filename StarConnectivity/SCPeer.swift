@@ -25,22 +25,22 @@ public class SCPeer {
     
     public let protocolVersion:UInt8
     public let identifier:NSUUID
-    private(set) public var identifierBytes = [UInt8](count: 16, repeatedValue: 0)
+    private(set) public var identifierBytes = [UInt8](repeating: 0, count: 16)
     private(set) public var discoveryInfo:JSON?
-    private(set) public var discoveryData:NSData!
+    private(set) public var discoveryData:Data!
     
     public init() {
         protocolVersion = SCCommon.STARCONNECTIVITY_PROTOCOL_VERSION
         identifier = NSUUID()
         generateUuidBytes()
-        generateDiscoveryData()
+        _ = generateDiscoveryData()
     }
     
     public init(withUUID id:NSUUID) {
         protocolVersion = SCCommon.STARCONNECTIVITY_PROTOCOL_VERSION
         identifier = id
         generateUuidBytes()
-        generateDiscoveryData()
+        _ = generateDiscoveryData()
     }
     
     public init?(withDiscoveryInfo discoveryInfo:JSON) {
@@ -53,43 +53,43 @@ public class SCPeer {
         }
     }
     
-    public init?(fromDiscoveryData discoveryData:NSData) {
+    public init?(fromDiscoveryData discoveryData:Data) {
         self.discoveryData = discoveryData
-        if discoveryData.length < 17 {
+        if discoveryData.count < 17 {
             return nil
         }
         
-        self.discoveryData.getBytes(&identifierBytes, length: 16)
-        var protocolBytes = [UInt8](count: 1, repeatedValue: 0)
-        discoveryData.getBytes(&protocolBytes, length: 1)
+        discoveryData.copyBytes(to: &identifierBytes, count: 16)
+        var protocolBytes = [UInt8](repeating: 0, count: 1)
+        discoveryData.copyBytes(to: &protocolBytes, count: 1)
         protocolVersion = protocolBytes[0]
         
         
-        identifier = NSUUID(UUIDBytes: identifierBytes)
+        identifier = NSUUID(uuidBytes: identifierBytes)
         
-        if discoveryData.length > 17 {
-            discoveryInfo = JSON(data: discoveryData.subdataWithRange(NSMakeRange(17, discoveryData.length-17)))
+        if discoveryData.count > 17 {
+            discoveryInfo = JSON(data: discoveryData.subdata(in: 17..<discoveryData.endIndex))
         }
         
     }
     
     private func generateUuidBytes() {
-        identifier.getUUIDBytes(&identifierBytes)
+        identifier.getBytes(&identifierBytes)
     }
     
     private func generateDiscoveryData() -> Bool {
-        let buildDiscoveryData = NSMutableData()
-        buildDiscoveryData.appendBytes(identifierBytes, length: 16)
-        buildDiscoveryData.appendBytes([protocolVersion], length: 1)
+        var buildDiscoveryData = Data()
+        buildDiscoveryData.append(identifierBytes, count: 16)
+        buildDiscoveryData.append(protocolVersion)
         
         if discoveryInfo != nil, let infoData = try? discoveryInfo?.rawData() {
-            if infoData == nil || infoData?.length > 400 {
+            if infoData == nil || infoData!.count > 400 {
                 return false
             }
-            buildDiscoveryData.appendData(infoData!)
+            buildDiscoveryData.append(infoData!)
         }
         
-        discoveryData = NSData(data: buildDiscoveryData)
+        discoveryData = buildDiscoveryData
         
         return true
     }
@@ -97,5 +97,5 @@ public class SCPeer {
 
 
 public func ==(lpeer: SCPeer, rpeer: SCPeer) -> Bool {
-    return lpeer.discoveryData.isEqualToData(rpeer.discoveryData)
+    return lpeer.discoveryData == rpeer.discoveryData
 }

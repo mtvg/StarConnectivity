@@ -9,16 +9,16 @@
 import Foundation
 
 internal class SCDataReception: NSObject {
-    var onData:((NSData, UInt8)->())?
-    var onInternalData:((NSData, UInt8)->())?
+    var onData:((Data, UInt8)->())?
+    var onInternalData:((Data, UInt8)->())?
     
     private var receptionQueues = [UInt8:SCReceptionQueue]()
     
-    func parsePacket(data:NSData) {
+    func parsePacket(data:Data) {
         var packetPointer = 0
         
         var header:UInt8 = 0
-        data.getBytes(&header, length: 1)
+        data.copyBytes(to: &header, count: 1)
         packetPointer += 1
         
         var priorityQueue:UInt8 = header >> 4
@@ -33,27 +33,27 @@ internal class SCDataReception: NSObject {
         let queue = receptionQueues[priorityQueue]!
         
         if header&1 == 1 {
-            data.getBytes(&queue.totalLength, range: NSMakeRange(packetPointer, 4))
-            packetPointer += 4
+            packetPointer += data.copyBytes(to: UnsafeMutableBufferPointer(start: &queue.totalLength, count:1), from: packetPointer..<packetPointer+4)
         }
         
-        queue.dataBuffer.appendData(data.subdataWithRange(NSMakeRange(packetPointer, data.length-packetPointer)))
-        if queue.dataBuffer.length == Int(queue.totalLength) {
-            let data = NSData(data: queue.dataBuffer)
+        queue.dataBuffer.append(data.subdata(in: packetPointer..<data.count))
+        
+        if queue.dataBuffer.count == Int(queue.totalLength) {
+            let data = Data(queue.dataBuffer)
             if priorityQueue > 0xF {
                 onInternalData?(data, priorityQueue-0x10)
             } else {
                 onData?(data, priorityQueue)
             }
             
-            queue.dataBuffer.length = 0
+            queue.dataBuffer.count = 0
             queue.totalLength = 0
         }
         
     }
     
     private class SCReceptionQueue {
-        var dataBuffer = NSMutableData()
+        var dataBuffer = Data()
         var totalLength:UInt32 = 0
     }
 }

@@ -20,7 +20,7 @@ internal class SCDataTransmission: NSObject {
     
     private var lastPacketErrorCount = 0
     
-    func getNextPacket(repeatLastPacket:Bool=false) -> NSData? {
+    func getNextPacket(repeatLastPacket:Bool=false) -> Data? {
         
         if repeatLastPacket {
             lastPacketErrorCount += 1
@@ -40,7 +40,7 @@ internal class SCDataTransmission: NSObject {
             
             queue.bytesSent += lastTransmitedLength
             
-            if queue.bytesSent == queue.dataQueue[0].length {
+            if queue.bytesSent == queue.dataQueue[0].count {
                 queue.dataQueue.removeFirst()
                 queue.bytesSent = 0
                 
@@ -61,8 +61,8 @@ internal class SCDataTransmission: NSObject {
                 
                 // Header byte 4 last bits = priority queue
                 var header:UInt8 = key << 4
-                let packet = NSMutableData()
-                var size = UInt32(queue.dataQueue[0].length)
+                var packet = Data()
+                var size = UInt32(queue.dataQueue[0].count)
                 
                 if key > 0xF {
                     header |= 2
@@ -70,19 +70,18 @@ internal class SCDataTransmission: NSObject {
                 if queue.bytesSent == 0 {
                     // Mark packet header as begining of data, add header byte to packet
                     header |= 1
-                    packet.appendBytes(&header, length: 1)
-                    packet.appendBytes(&size, length: 4)
+                    packet.append(header)
+                    packet.append(UnsafeBufferPointer(start: &size, count: 1))
                 } else {
                     // Add header byte to packet
-                    packet.appendBytes(&header, length: 1)
+                    packet.append(&header, count: 1)
                 }
                 
-                
-                let range = NSMakeRange(queue.bytesSent, min(PACKET_SIZE-packet.length, Int(size)-queue.bytesSent))
-                packet.appendData(queue.dataQueue[0].subdataWithRange(range))
+                let range:Range<Int> = queue.bytesSent..<queue.bytesSent+min(PACKET_SIZE-packet.count, Int(size)-queue.bytesSent)
+                packet.append(queue.dataQueue[0].subdata(in: range))
                 
                 lastTransmitedQueue = queue
-                lastTransmitedLength = range.length
+                lastTransmitedLength = range.count
                 
                 return packet
             }
@@ -91,7 +90,7 @@ internal class SCDataTransmission: NSObject {
         return nil
     }
     
-    func addToQueue(data:NSData, onPriorityQueue priorityQueue:UInt8, flushQueue:Bool, internalData:Bool, callback:(Bool -> Void)?) {
+    func addToQueue(data:Data, onPriorityQueue priorityQueue:UInt8, flushQueue:Bool, internalData:Bool, callback:((Bool) -> Void)?) {
         
         if priorityQueue > 0xF {
             return
@@ -104,7 +103,7 @@ internal class SCDataTransmission: NSObject {
         
         if transmissionQueues[queueKey] == nil {
             transmissionQueues[queueKey] = SCTransmissionQueue()
-            transmissionQueuesKeys = transmissionQueues.keys.sort(>)
+            transmissionQueuesKeys = transmissionQueues.keys.sorted(by: >)
         }
         
         let queue = transmissionQueues[queueKey]!
@@ -119,8 +118,8 @@ internal class SCDataTransmission: NSObject {
     }
     
     private class SCTransmissionQueue {
-        var dataQueue = [NSData]()
-        var callbackQueue:[(Bool -> Void)?] = []
+        var dataQueue = [Data]()
+        var callbackQueue:[((Bool) -> Void)?] = []
         var bytesSent = 0
     }
     
