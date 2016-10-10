@@ -111,6 +111,9 @@ internal class SCDataTransmission: NSObject {
         if flushQueue {
             queue.dataQueue.removeAll()
             queue.bytesSent = 0
+            while let callback = queue.callbackQueue.removeFirst() {
+                callback(false)
+            }
         }
         
         queue.dataQueue.append(data)
