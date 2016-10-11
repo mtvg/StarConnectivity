@@ -19,7 +19,6 @@ public class SCBluetoothAdvertiser : NSObject {
     private var advData:[String:Any]!
     private let cbPeripheralManager:CBPeripheralManager
     private var cbPeripheralManagerDelegate:PeripheralManagerDelegate!
-    private let infochar = CBMutableCharacteristic(type: SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID, properties: CBCharacteristicProperties.read, value: nil, permissions: CBAttributePermissions.readable)
     
     private var advertisingRequested = false
     private var serviceInitiated = false
@@ -44,7 +43,7 @@ public class SCBluetoothAdvertiser : NSObject {
         advData = [CBAdvertisementDataLocalNameKey : "SC#"+timedata, CBAdvertisementDataServiceUUIDsKey : [serviceUUID]]
     }
     
-    public func startAdvertising(forceRediscovery:Bool=false) {
+    public func startAdvertising() {
         advertisingRequested = true
         
         if cbPeripheralManager.state == .poweredOn {
@@ -52,10 +51,7 @@ public class SCBluetoothAdvertiser : NSObject {
                 initService()
                 serviceInitiated = true
             }
-            cbPeripheralManager.updateValue(peer.discoveryData, for: infochar, onSubscribedCentrals: nil)
-            if forceRediscovery {
-                generateUniqueBluetoothAdvertisingData()
-            }
+            generateUniqueBluetoothAdvertisingData()
             cbPeripheralManager.startAdvertising(advData)
         }
     }
@@ -66,6 +62,7 @@ public class SCBluetoothAdvertiser : NSObject {
     }
     
     private func initService() {
+        let infochar = CBMutableCharacteristic(type: SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID, properties: CBCharacteristicProperties.read, value: nil, permissions: CBAttributePermissions.readable)
         let service = CBMutableService(type: serviceUUID, primary: true)
         service.characteristics = [infochar]
         cbPeripheralManager.add(service)
@@ -93,6 +90,11 @@ public class SCBluetoothAdvertiser : NSObject {
             if peripheral.state == .poweredOn && outer.advertisingRequested {
                 outer.startAdvertising()
             }
+        }
+        
+        func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveRead request: CBATTRequest) {
+            request.value = outer.peer.discoveryData
+            peripheral.respond(to: request, withResult: .success)
         }
     }
 
