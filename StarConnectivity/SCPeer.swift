@@ -68,6 +68,16 @@ public class SCPeer {
         
     }
     
+    public func update(discoveryInfo:JSON) -> Bool {
+        let oldInfo = self.discoveryInfo
+        self.discoveryInfo = discoveryInfo
+        let infoIsValid = generateDiscoveryData()
+        if !infoIsValid {
+            self.discoveryInfo = oldInfo
+        }
+        return infoIsValid
+    }
+    
     private func generateDiscoveryData() -> Bool {
         var buildDiscoveryData = Data()
         buildDiscoveryData.append(UnsafeBufferPointer(start: &identifier, count: 1))

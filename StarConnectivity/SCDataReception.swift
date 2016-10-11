@@ -12,7 +12,7 @@ internal class SCDataReception: NSObject {
     var onData:((Data, SCPriorityQueue)->())?
     var onInternalData:((Data, SCPriorityQueue)->())?
     
-    private var receptionQueues = [SCPriorityQueue:SCReceptionQueue]()
+    private var receptionQueues = [UInt8:SCReceptionQueue]()
     
     func parse(packet data:Data) {
         var packetPointer = 0
@@ -21,7 +21,7 @@ internal class SCDataReception: NSObject {
         data.copyBytes(to: &header, count: 1)
         packetPointer += 1
         
-        var priorityQueue:SCPriorityQueue = header >> 4
+        var priorityQueue:UInt8 = header >> 4
         if header&2 == 2 {
             priorityQueue += 0x10
         }
@@ -41,9 +41,9 @@ internal class SCDataReception: NSObject {
         if queue.dataBuffer.count == Int(queue.totalLength) {
             let data = Data(queue.dataBuffer)
             if priorityQueue > 0xF {
-                onInternalData?(data, priorityQueue-0x10)
+                onInternalData?(data, SCPriorityQueue(rawValue: priorityQueue-0x10)!)
             } else {
-                onData?(data, priorityQueue)
+                onData?(data, SCPriorityQueue(rawValue: priorityQueue)!)
             }
             
             queue.dataBuffer.count = 0

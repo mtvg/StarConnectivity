@@ -16,36 +16,39 @@ public class SCBluetoothAdvertiser : NSObject {
     public let serviceUUID:CBUUID
     public let peer:SCPeer
     
-    private let advData:[String:Any]
+    private var advData:[String:Any]!
     private let cbPeripheralManager:CBPeripheralManager
     private var cbPeripheralManagerDelegate:PeripheralManagerDelegate!
     
     private var advertisingRequested = false
-    private var servicesInitialised = false
     
     public init(centralPeer peer:SCPeer, serviceUUID uuid: UUID) {
         self.serviceUUID = CBUUID(nsuuid: uuid)
         self.peer = peer
         
+        cbPeripheralManager = CBPeripheralManager(delegate: nil, queue: DispatchQueue(label: "starConnectivity_bluetoothAdvertiserQueue"), options: [CBPeripheralManagerOptionShowPowerAlertKey:true])
+        
+        super.init()
+        generateUniqueBluetoothAdvertisingData()
+        cbPeripheralManagerDelegate = PeripheralManagerDelegate(outer: self)
+        cbPeripheralManager.delegate = cbPeripheralManagerDelegate
+    }
+    
+    private func generateUniqueBluetoothAdvertisingData() {
         // generating unique name for this advertising session, so Browser can distinguish multiple sessions from same device
         var time = NSDate().timeIntervalSince1970
         let timedata = String(NSData(bytes: &time, length: MemoryLayout<TimeInterval>.size).base64EncodedString(options: []).characters.dropLast())
         
         advData = [CBAdvertisementDataLocalNameKey : "SC#"+timedata, CBAdvertisementDataServiceUUIDsKey : [serviceUUID]]
-        cbPeripheralManager = CBPeripheralManager(delegate: nil, queue: DispatchQueue(label: "starConnectivity_bluetoothAdvertiserQueue"), options: [CBPeripheralManagerOptionShowPowerAlertKey:true])
-        
-        super.init()
-        cbPeripheralManagerDelegate = PeripheralManagerDelegate(outer: self)
-        cbPeripheralManager.delegate = cbPeripheralManagerDelegate
     }
     
-    public func startAdvertising() {
+    public func startAdvertising(forceRediscovery:Bool=false) {
         advertisingRequested = true
         
         if cbPeripheralManager.state == .poweredOn {
-            if !servicesInitialised {
-                initService()
-                servicesInitialised = true
+            initService()
+            if forceRediscovery {
+                generateUniqueBluetoothAdvertisingData()
             }
             cbPeripheralManager.startAdvertising(advData)
         }
@@ -60,6 +63,7 @@ public class SCBluetoothAdvertiser : NSObject {
         let service = CBMutableService(type: serviceUUID, primary: true)
         let infochar = CBMutableCharacteristic(type: SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID, properties: CBCharacteristicProperties.read, value: peer.discoveryData, permissions: CBAttributePermissions.readable)
         service.characteristics = [infochar]
+        cbPeripheralManager.removeAllServices()
         cbPeripheralManager.add(service)
     }
     
