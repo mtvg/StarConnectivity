@@ -8,9 +8,9 @@
 
 
 // Discovery Data format for protocol version 1:
-//   [0-15]           [16]           [17-416]
-//   16 bits          1 bit        0 to 400bits
-// Peer UUID   Protocol Version   Optionnal JSON
+//   [0-15]           [16]             [17-18]          [19-418]
+//  16 bytes         1 byte            2 bytes        0 to 400bits
+// Peer UUID   Protocol Version     Payload Size   Optionnal Payload
 
 
 
@@ -62,8 +62,12 @@ public class SCPeer {
         discoveryData.copyBytes(to: &protocolByte, from: 16..<17)
         protocolVersion = protocolByte
         
-        if discoveryData.count > 17 {
-            discoveryInfo = JSON(data: discoveryData.subdata(in: 17..<discoveryData.endIndex))
+        var payloadLength:UInt16 = 0
+        _ = discoveryData.copyBytes(to: UnsafeMutableBufferPointer(start: &payloadLength, count: 1), from: 17..<19)
+        
+        let payloadEnd = Int(19+payloadLength)
+        if discoveryData.count > 19, discoveryData.count >= payloadEnd {
+            discoveryInfo = JSON(data: discoveryData.subdata(in: 19..<payloadEnd))
         }
         
     }
@@ -87,6 +91,8 @@ public class SCPeer {
             if infoData == nil || infoData!.count > 400 {
                 return false
             }
+            var payloadLength = UInt16(infoData!.count)
+            buildDiscoveryData.append(UnsafeBufferPointer(start: &payloadLength, count: 1))
             buildDiscoveryData.append(infoData!)
         }
         
