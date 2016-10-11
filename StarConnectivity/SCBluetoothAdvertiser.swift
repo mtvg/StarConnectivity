@@ -19,8 +19,10 @@ public class SCBluetoothAdvertiser : NSObject {
     private var advData:[String:Any]!
     private let cbPeripheralManager:CBPeripheralManager
     private var cbPeripheralManagerDelegate:PeripheralManagerDelegate!
+    private let infochar = CBMutableCharacteristic(type: SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID, properties: CBCharacteristicProperties.read, value: nil, permissions: CBAttributePermissions.readable)
     
     private var advertisingRequested = false
+    private var serviceInitiated = false
     
     public init(centralPeer peer:SCPeer, serviceUUID uuid: UUID) {
         self.serviceUUID = CBUUID(nsuuid: uuid)
@@ -46,7 +48,11 @@ public class SCBluetoothAdvertiser : NSObject {
         advertisingRequested = true
         
         if cbPeripheralManager.state == .poweredOn {
-            initService()
+            if !serviceInitiated {
+                initService()
+                serviceInitiated = true
+            }
+            cbPeripheralManager.updateValue(peer.discoveryData, for: infochar, onSubscribedCentrals: nil)
             if forceRediscovery {
                 generateUniqueBluetoothAdvertisingData()
             }
@@ -61,9 +67,7 @@ public class SCBluetoothAdvertiser : NSObject {
     
     private func initService() {
         let service = CBMutableService(type: serviceUUID, primary: true)
-        let infochar = CBMutableCharacteristic(type: SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID, properties: CBCharacteristicProperties.read, value: peer.discoveryData, permissions: CBAttributePermissions.readable)
         service.characteristics = [infochar]
-        cbPeripheralManager.removeAllServices()
         cbPeripheralManager.add(service)
     }
     
