@@ -33,6 +33,7 @@ internal class SCDataReception: NSObject {
         let queue = receptionQueues[priorityQueue]!
         
         if header&1 == 1 {
+            queue.dataBuffer.count = 0
             packetPointer += data.copyBytes(to: UnsafeMutableBufferPointer(start: &queue.totalLength, count:1), from: packetPointer..<packetPointer+4)
         }
         

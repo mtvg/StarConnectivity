@@ -57,6 +57,16 @@ internal class SCDataTransmission: NSObject {
         
         for key in transmissionQueuesKeys {
             let queue = transmissionQueues[key]!
+            if queue.flushQueue {
+                while queue.dataQueue.count > 1 {
+                    queue.dataQueue.removeFirst()
+                    queue.bytesSent = 0
+                    if let callback = queue.callbackQueue.removeFirst() {
+                        callback(false)
+                    }
+                }
+                queue.flushQueue = false
+            }
             if queue.dataQueue.count > 0 {
                 
                 // Header byte 4 last bits = priority queue
@@ -105,11 +115,7 @@ internal class SCDataTransmission: NSObject {
         let queue = transmissionQueues[queueKey]!
         
         if flushQueue {
-            queue.dataQueue.removeAll()
-            queue.bytesSent = 0
-            while let callback = queue.callbackQueue.removeFirst() {
-                callback(false)
-            }
+            queue.flushQueue = true
         }
         
         queue.dataQueue.append(data)
@@ -120,6 +126,7 @@ internal class SCDataTransmission: NSObject {
         var dataQueue = [Data]()
         var callbackQueue:[((Bool) -> Void)?] = []
         var bytesSent = 0
+        var flushQueue = false
     }
     
 }
