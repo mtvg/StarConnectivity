@@ -46,11 +46,16 @@ public class SCBluetoothScanner : NSObject {
         }
     }
     
-    public func stopScanning() {
+    public func stopScanning(forgetFoundCentrals forget:Bool=false) {
         isScanning = false
         scanningRequested = false
         cbCentralManager.stopScan()
         centralScanTimeoutTimer?.invalidate()
+        
+        if forget {
+            cbCentralManagerDelegate.clearAllPeripherals()
+            availableCentrals.removeAll()
+        }
     }
     
     private func didFindCentral(_ central:SCPeer) {
@@ -97,6 +102,11 @@ public class SCBluetoothScanner : NSObject {
             super.init()
         }
         
+        func clearAllPeripherals() {
+            discoveredPeripherals.removeAll()
+            discoveredPeripheralsID.removeAll()
+        }
+        
         func centralManagerDidUpdateState(_ central: CBCentralManager) {
             if central.state == .poweredOn && outer.scanningRequested {
                 outer.startScanning()
@@ -137,10 +147,17 @@ public class SCBluetoothScanner : NSObject {
         }
         
         func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
+            if !outer.isScanning {
+                central.cancelPeripheralConnection(peripheral)
+            }
             peripheral.discoverServices([outer.scannedCentralService])
         }
         
         func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
+            if !outer.isScanning {
+                outer.cbCentralManager.cancelPeripheralConnection(peripheral)
+            }
+            
             if peripheral.services != nil {
                 for service in peripheral.services! {
                     if service.uuid == outer.scannedCentralService {
@@ -153,6 +170,10 @@ public class SCBluetoothScanner : NSObject {
         }
         
         func peripheral(_ peripheral: CBPeripheral, didDiscoverCharacteristicsFor service: CBService, error: Error?) {
+            
+            if !outer.isScanning {
+                outer.cbCentralManager.cancelPeripheralConnection(peripheral)
+            }
             
             if service.characteristics != nil {
                 for characteristic in service.characteristics! {
@@ -167,6 +188,10 @@ public class SCBluetoothScanner : NSObject {
         }
         
         func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
+            if !outer.isScanning {
+                outer.cbCentralManager.cancelPeripheralConnection(peripheral)
+            }
+            
             if characteristic.uuid == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID && characteristic.value != nil && outer.isScanning && error == nil {
                 if let peer = SCPeer(fromDiscoveryData: characteristic.value!) {
                     var newNeeded = true
