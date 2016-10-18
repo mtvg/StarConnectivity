@@ -65,6 +65,12 @@ public class SCBluetoothScanner : NSObject {
         }
     }
     
+    private func didUpdateCentral(_ central:SCPeer) {
+        delegateQueue.async {
+            self.delegate?.scanner(self, didUpdate: central)
+        }
+    }
+    
     private func didLooseCentral(_ central:SCPeer) {
         delegateQueue.async {
             self.delegate?.scanner(self, didLoose: central)
@@ -109,14 +115,17 @@ public class SCBluetoothScanner : NSObject {
                 
                 if let index = outer.availableCentrals.index(where: {$0.peripheral == peripheral}) {
                     
+                    outer.availableCentrals[index].lastSeen = NSDate()
+                    outer.didRefindCentral(outer.availableCentrals[index].peer)
+                    
                     if outer.availableCentrals[index].advertisingUID == pid {
-                        outer.availableCentrals[index].lastSeen = NSDate()
-                        outer.didRefindCentral(outer.availableCentrals[index].peer)
                         return
-                    } else {
+                    }
+                    
+                    /*else {
                         outer.didLooseCentral(outer.availableCentrals[index].peer)
                         outer.availableCentrals.remove(at: index)
-                    }
+                    }*/
                 }
                 
                 if discoveredPeripherals.index(of: peripheral) != nil {
@@ -163,9 +172,22 @@ public class SCBluetoothScanner : NSObject {
         func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
             if characteristic.uuid == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID && characteristic.value != nil && outer.isScanning && error == nil {
                 if let peer = SCPeer(fromDiscoveryData: characteristic.value!) {
-                    let p = ScannedCentral(peer: peer, peripheral: peripheral, lastSeen: NSDate(), advertisingUID: discoveredPeripheralsID[peripheral]!)
-                    outer.availableCentrals.append(p)
-                    outer.didFindCentral(peer)
+                    var newNeeded = true
+                    if let index = outer.availableCentrals.index(where: {$0.peripheral == peripheral}) {
+                        if outer.availableCentrals[index].peer.identifier == peer.identifier {
+                            newNeeded = false
+                            outer.availableCentrals[index].peer = peer
+                            outer.didUpdateCentral(peer)
+                        } else {
+                            outer.didLooseCentral(outer.availableCentrals[index].peer)
+                            outer.availableCentrals.remove(at: index)
+                        }
+                    }
+                    if newNeeded {
+                        let p = ScannedCentral(peer: peer, peripheral: peripheral, lastSeen: NSDate(), advertisingUID: discoveredPeripheralsID[peripheral]!)
+                        outer.availableCentrals.append(p)
+                        outer.didFindCentral(peer)
+                    }
                 }
             }
             
@@ -183,7 +205,7 @@ public class SCBluetoothScanner : NSObject {
     }
     
     private struct ScannedCentral {
-        let peer:SCPeer
+        var peer:SCPeer
         let peripheral:CBPeripheral
         var lastSeen:NSDate
         let advertisingUID:String
