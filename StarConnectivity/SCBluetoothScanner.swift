@@ -12,6 +12,7 @@ import CoreBluetooth
 public class SCBluetoothScanner : NSObject {
     
     public weak var delegate:SCBluetoothScannerDelegate?
+    public var delegateQueue = DispatchQueue.main
     
     private let cbCentralManager:CBCentralManager
     private var cbCentralManagerDelegate:CentralManagerDelegate!
@@ -39,7 +40,6 @@ public class SCBluetoothScanner : NSObject {
         if cbCentralManager.state == .poweredOn {
             isScanning = true
             cbCentralManager.scanForPeripherals(withServices: [scannedCentralService], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
-            //centralScanTimeoutTimer = Timer.scheduledTimer(timeInterval: 1.0, target: self, selector: #selector(checkPeripheralScanTimeout), userInfo: nil, repeats: true)
             
             centralScanTimeoutTimer = Timer(timeInterval: 1.0, target: self, selector: #selector(checkPeripheralScanTimeout), userInfo: nil, repeats: true)
             RunLoop.main.add(centralScanTimeoutTimer!, forMode: RunLoopMode.commonModes)
@@ -54,7 +54,9 @@ public class SCBluetoothScanner : NSObject {
     }
     
     private func didFindCentral(_ central:SCPeer) {
-        delegate?.scanner(self, didFind: central)
+        delegateQueue.async {
+            self.delegate?.scanner(self, didFind: central)
+        }
     }
     
     private func didRefindCentral(_ central:SCPeer) {
@@ -64,7 +66,9 @@ public class SCBluetoothScanner : NSObject {
     }
     
     private func didLooseCentral(_ central:SCPeer) {
-        delegate?.scanner(self, didLoose: central)
+        delegateQueue.async {
+            self.delegate?.scanner(self, didLoose: central)
+        }
     }
     
     @objc private func checkPeripheralScanTimeout() {
@@ -91,7 +95,9 @@ public class SCBluetoothScanner : NSObject {
             if central.state == .poweredOn && outer.scanningRequested {
                 outer.startScanning()
             }
-            outer.delegate?.scanner(outer, didUpdateBluetoothState: SCBluetoothState(rawValue: central.state.rawValue)!)
+            outer.delegateQueue.async {
+                self.outer.delegate?.scanner(self.outer, didUpdateBluetoothState: SCBluetoothState(rawValue: central.state.rawValue)!)
+            }
         }
         
         func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {

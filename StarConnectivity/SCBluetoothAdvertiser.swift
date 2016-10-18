@@ -12,6 +12,7 @@ import CoreBluetooth
 public class SCBluetoothAdvertiser : NSObject {
     
     public weak var delegate:SCBluetoothAdvertiserDelegate?
+    public var delegateQueue = DispatchQueue.main
     
     public let serviceUUID:CBUUID
     public let peer:SCPeer
@@ -79,8 +80,9 @@ public class SCBluetoothAdvertiser : NSObject {
         }
         
         func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
-            
-            outer.delegate?.advertiser(outer, didUpdateBluetoothState: SCBluetoothState(rawValue: peripheral.state.rawValue)!)
+            outer.delegateQueue.async {
+                self.outer.delegate?.advertiser(self.outer, didUpdateBluetoothState: SCBluetoothState(rawValue: peripheral.state.rawValue)!)
+            }
             
             if oldPeripheralState == peripheral.state.rawValue {
                 return

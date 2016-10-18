@@ -12,6 +12,7 @@ import CoreBluetooth
 public class SCBluetoothPeripheral : NSObject {
     
     public weak var delegate:SCBluetoothPeripheralDelegate?
+    public var delegateQueue = DispatchQueue.main
     public let centralPeer:SCPeer
     public let peer:SCPeer
     
@@ -125,7 +126,9 @@ public class SCBluetoothPeripheral : NSObject {
     }
     
     private func onReceptionData(data:Data, queue:SCPriorityQueue) {
-        delegate?.peripheral(self, didReceive: data, on: queue, from: peer)
+        delegateQueue.async {
+            self.delegate?.peripheral(self, didReceive: data, on: queue, from: self.peer)
+        }
     }
     
     private func onReceptionInternalData(data:Data, queue:SCPriorityQueue) {
@@ -143,7 +146,9 @@ public class SCBluetoothPeripheral : NSObject {
         }
         
         connected = true
-        delegate?.peripheral(self, didConnect: centralPeer)
+        delegateQueue.async {
+            self.delegate?.peripheral(self, didConnect: self.centralPeer)
+        }
     }
     
     private func onUnsubscribed() {
@@ -152,7 +157,9 @@ public class SCBluetoothPeripheral : NSObject {
         if !disconnectionInitiated {
             error = NSError(domain: "UnexpectedDisconnection", code: -1, userInfo: [NSLocalizedDescriptionKey:"Unexpected disconnection from Central"])
         }
-        delegate?.peripheral(self, didDisconnect: centralPeer, withError: error)
+        delegateQueue.async {
+            self.delegate?.peripheral(self, didDisconnect: self.centralPeer, withError: error)
+        }
         
         cbPeripheralManager.removeAllServices()
         servicesInitialised = false
@@ -175,7 +182,9 @@ public class SCBluetoothPeripheral : NSObject {
         }
         
         func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
-            outer.delegate?.peripheral(outer, didUpdateBluetoothState: SCBluetoothState(rawValue: peripheral.state.rawValue)!)
+            outer.delegateQueue.async {
+                self.outer.delegate?.peripheral(self.outer, didUpdateBluetoothState: SCBluetoothState(rawValue: peripheral.state.rawValue)!)
+            }
             
             if oldPeripheralState == peripheral.state.rawValue {
                 return

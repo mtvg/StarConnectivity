@@ -12,6 +12,7 @@ import CoreBluetooth
 public class SCBluetoothCentral :NSObject {
     
     public weak var delegate:SCBluetoothCentralDelegate?
+    public var delegateQueue = DispatchQueue.main
     public let centralPeer:SCPeer
     
     private let cbCentralManager:CBCentralManager
@@ -54,7 +55,9 @@ public class SCBluetoothCentral :NSObject {
         
         if let dIndex = connectedDevices.index(where: {$0.peripheral == peripheral}) {
             if let peer = connectedDevices[dIndex].peer {
-                delegate?.central(self, didDisconnect: peer)
+                delegateQueue.async {
+                    self.delegate?.central(self, didDisconnect: peer)
+                }
             }
             connectedDevices[dIndex].peer = nil
             connectedDevices.remove(at: dIndex)
@@ -99,7 +102,9 @@ public class SCBluetoothCentral :NSObject {
             if peer == nil {
                 return
             }
-            outer.delegate?.central(outer, didReceive: data, on: queue, from: peer!)
+            outer.delegateQueue.async {
+                self.outer.delegate?.central(self.outer, didReceive: data, on: queue, from: self.peer!)
+            }
         }
         
         func onReceptionInternalData(data:Data, queue:SCPriorityQueue) {
@@ -169,7 +174,9 @@ public class SCBluetoothCentral :NSObject {
             if central.state == .poweredOn {
                 central.scanForPeripherals(withServices: [outer.scannedPeripheralService], options: [CBCentralManagerScanOptionAllowDuplicatesKey:true])
             }
-            outer.delegate?.central(outer, didUpdateBluetoothState: SCBluetoothState(rawValue: central.state.rawValue)!)
+            outer.delegateQueue.async {
+                self.outer.delegate?.central(self.outer, didUpdateBluetoothState: SCBluetoothState(rawValue: central.state.rawValue)!)
+            }
         }
         
         func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
@@ -261,7 +268,9 @@ public class SCBluetoothCentral :NSObject {
                     if let peer = SCPeer(fromDiscoveryData: device.infochar.value!) {
                         device.peer = peer
                         peripheral.delegate = device
-                        outer.delegate?.central(outer, didConnect: peer)
+                        outer.delegateQueue.async {
+                            self.outer.delegate?.central(self.outer, didConnect: peer)
+                        }
                         
                         return
                     }
