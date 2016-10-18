@@ -117,7 +117,7 @@ public class SCBluetoothScanner : NSObject {
         }
         
         func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-
+            
             if let pid = advertisementData[CBAdvertisementDataLocalNameKey] as? String {
                 if pid.characters.count < 3 || pid.substring(to: pid.index(pid.startIndex, offsetBy: 3)) != "SC#" {
                     return
@@ -150,9 +150,10 @@ public class SCBluetoothScanner : NSObject {
             
             if outer.isScanning {
                 peripheral.discoverServices([outer.scannedCentralService])
+            } else {
+                central.cancelPeripheralConnection(peripheral)
             }
             
-            central.cancelPeripheralConnection(peripheral)
         }
         
         func peripheral(_ peripheral: CBPeripheral, didDiscoverServices error: Error?) {
@@ -184,7 +185,7 @@ public class SCBluetoothScanner : NSObject {
         
         func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
             
-            if characteristic.uuid == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID && characteristic.value != nil && outer.isScanning && error == nil && outer.isScanning {
+            if characteristic.uuid == SCCommon.DISCOVERYINFO_CHARACTERISTIC_UUID && characteristic.value != nil && outer.isScanning && error == nil {
                 if let peer = SCPeer(fromDiscoveryData: characteristic.value!) {
                     var newNeeded = true
                     if let index = outer.availableCentrals.index(where: {$0.peripheral == peripheral}) {
@@ -226,5 +227,5 @@ public class SCBluetoothScanner : NSObject {
         var advertisingUID:String
     }
     
-
+    
 }
