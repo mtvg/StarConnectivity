@@ -178,6 +178,7 @@ public class SCBluetoothScanner : NSObject {
                             newNeeded = false
                             outer.availableCentrals[index].peer = peer
                             outer.didUpdateCentral(peer)
+                            outer.availableCentrals[index].lastSeen = NSDate()
                         } else {
                             outer.didLooseCentral(outer.availableCentrals[index].peer)
                             outer.availableCentrals.remove(at: index)
