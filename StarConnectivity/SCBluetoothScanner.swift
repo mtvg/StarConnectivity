@@ -120,12 +120,9 @@ public class SCBluetoothScanner : NSObject {
                     
                     if outer.availableCentrals[index].advertisingUID == pid {
                         return
+                    } else {
+                        outer.availableCentrals[index].advertisingUID = pid
                     }
-                    
-                    /*else {
-                        outer.didLooseCentral(outer.availableCentrals[index].peer)
-                        outer.availableCentrals.remove(at: index)
-                    }*/
                 }
                 
                 if discoveredPeripherals.index(of: peripheral) != nil {
@@ -209,7 +206,7 @@ public class SCBluetoothScanner : NSObject {
         var peer:SCPeer
         let peripheral:CBPeripheral
         var lastSeen:NSDate
-        let advertisingUID:String
+        var advertisingUID:String
     }
     
 
