@@ -65,7 +65,7 @@ public class SCBluetoothCentral :NSObject {
         
     }
     
-
+    
     private class Device: NSObject, CBPeripheralDelegate {
         let peripheral:CBPeripheral
         let rxchar:CBCharacteristic
@@ -76,6 +76,7 @@ public class SCBluetoothCentral :NSObject {
         private let transmission = SCDataTransmission()
         private let reception = SCDataReception()
         private var isWriting = false
+        private var writeTimeout:Timer?
         
         private weak var outer: SCBluetoothCentral!
         
@@ -113,15 +114,19 @@ public class SCBluetoothCentral :NSObject {
             }
         }
         
-        func flushData(repeatLastPacket:Bool=false) {
+        func flushData(repeatLastPacket:Bool=false, startOver:Bool=false) {
             if isWriting {
                 return
             }
             
             
-            if let packet = transmission.getNextPacket(repeatLastPacket: repeatLastPacket) {
+            if let packet = transmission.getNextPacket(repeatLastPacket: repeatLastPacket, startOver: startOver) {
                 peripheral.writeValue(packet, for: rxchar, type: .withResponse)
                 isWriting = true
+                
+                outer.delegateQueue.async() {
+                    self.writeTimeout = Timer.scheduledTimer(timeInterval: 5.0, target: self, selector: #selector(self.writeDidTimout), userInfo: nil, repeats: false)
+                }
             }
         }
         
@@ -137,7 +142,15 @@ public class SCBluetoothCentral :NSObject {
         
         func peripheral(_ peripheral: CBPeripheral, didWriteValueFor characteristic: CBCharacteristic, error: Error?) {
             isWriting = false
+            writeTimeout?.invalidate()
             flushData(repeatLastPacket: error != nil)
+        }
+        
+        func writeDidTimout() {
+            isWriting = false
+            
+            outer.remove(peripheral: peripheral)
+            disconnect(soft: false)
         }
         
         func peripheral(_ peripheral: CBPeripheral, didUpdateValueFor characteristic: CBCharacteristic, error: Error?) {
@@ -155,6 +168,7 @@ public class SCBluetoothCentral :NSObject {
                 }
             }
         }
+        
         
     }
     
@@ -180,6 +194,7 @@ public class SCBluetoothCentral :NSObject {
         }
         
         func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+            
             if discoveredPeripherals.index(of: peripheral) != nil {
                 return
             }
@@ -262,6 +277,7 @@ public class SCBluetoothCentral :NSObject {
         }
         
         func peripheral(_ peripheral: CBPeripheral, didUpdateNotificationStateFor characteristic: CBCharacteristic, error: Error?) {
+            
             if let dIndex = outer.connectedDevices.index(where: {$0.peripheral == peripheral}), error == nil {
                 let device = outer.connectedDevices[dIndex]
                 if characteristic == device.txchar && characteristic.isNotifying {
@@ -281,8 +297,8 @@ public class SCBluetoothCentral :NSObject {
         }
         
     }
-
-
-
+    
+    
+    
 }
 

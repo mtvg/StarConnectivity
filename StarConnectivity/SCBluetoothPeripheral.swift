@@ -16,7 +16,7 @@ public class SCBluetoothPeripheral : NSObject {
     public let centralPeer:SCPeer
     public let peer:SCPeer
     
-    private(set) public var connected = false
+    private(set) public var isConnected = false
     private var cancelingConnection = false
     private var disconnectionInitiated = false
     
@@ -29,7 +29,7 @@ public class SCBluetoothPeripheral : NSObject {
     private var infochar:CBMutableCharacteristic?
     
     private var advertisingRequested = false
-    private var servicesInitialised = false
+    private var advertisingTimer:Timer?
     
     private let transmission = SCDataTransmission()
     private var isWriting = false
@@ -57,6 +57,8 @@ public class SCBluetoothPeripheral : NSObject {
         txchar = CBMutableCharacteristic(type: SCCommon.TX_CHARACTERISTIC_UUID, properties: CBCharacteristicProperties.notify, value: nil, permissions: CBAttributePermissions.readable)
         rxchar = CBMutableCharacteristic(type: SCCommon.RX_CHARACTERISTIC_UUID, properties: [CBCharacteristicProperties.write, CBCharacteristicProperties.writeWithoutResponse], value: nil, permissions: CBAttributePermissions.writeable)
         service.characteristics = [infochar!, txchar!, rxchar!]
+        
+        cbPeripheralManager.removeAllServices()
         cbPeripheralManager.add(service)
     }
     
@@ -70,7 +72,7 @@ public class SCBluetoothPeripheral : NSObject {
         }
         
         disconnectionInitiated = true
-        if connected {
+        if isConnected {
             send(data: SCCommon.INTERNAL_PERIPHERAL_DISCONNECTION_REQUEST_DATA, on: SCCommon.INTERNAL_CONNECTION_QUEUE, flushQueue: false, internalData: true)
         } else {
             cancelingConnection = true
@@ -83,26 +85,20 @@ public class SCBluetoothPeripheral : NSObject {
         disconnect()
     }
     
-    private func startAdvertising() {
+    @objc private func startAdvertising() {
         advertisingRequested = true
         
         if cbPeripheralManager.state == .poweredOn {
-            if !servicesInitialised {
-                initService()
-                servicesInitialised = true
-            }
+            initService()
             cbPeripheralManager.startAdvertising(advData)
-            print("Now advertising on channel \(serviceUUID) with info \(peer.discoveryData)")
+            advertisingTimer = Timer.scheduledTimer(timeInterval: 2.0, target: self, selector: #selector(startAdvertising), userInfo: nil, repeats: false)
         }
     }
     
     private func stopAdvertising() {
         advertisingRequested = false
         cbPeripheralManager.stopAdvertising()
-    }
-    
-    private func transmitted() {
-        print("Data transmitted")
+        advertisingTimer?.invalidate()
     }
     
     private func send(data:Data, on priorityQueue:SCPriorityQueue, flushQueue:Bool, internalData:Bool, callback:((Bool) -> Void)?=nil) {
@@ -145,14 +141,14 @@ public class SCBluetoothPeripheral : NSObject {
             return
         }
         
-        connected = true
+        isConnected = true
         delegateQueue.async {
             self.delegate?.peripheral(self, didConnect: self.centralPeer)
         }
     }
     
     private func onUnsubscribed() {
-        connected = false
+        isConnected = false
         var error:NSError?
         if !disconnectionInitiated {
             error = NSError(domain: "UnexpectedDisconnection", code: -1, userInfo: [NSLocalizedDescriptionKey:"Unexpected disconnection from Central"])
@@ -162,7 +158,6 @@ public class SCBluetoothPeripheral : NSObject {
         }
         
         cbPeripheralManager.removeAllServices()
-        servicesInitialised = false
         
         cbPeripheralManager.delegate = nil
     }

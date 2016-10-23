@@ -62,12 +62,14 @@ public class SCPeer {
         discoveryData.copyBytes(to: &protocolByte, from: 16..<17)
         protocolVersion = protocolByte
         
-        var payloadLength:UInt16 = 0
-        _ = discoveryData.copyBytes(to: UnsafeMutableBufferPointer(start: &payloadLength, count: 1), from: 17..<19)
-        
-        let payloadEnd = Int(19+payloadLength)
-        if discoveryData.count > 19, discoveryData.count >= payloadEnd {
-            discoveryInfo = JSON(data: discoveryData.subdata(in: 19..<payloadEnd))
+        if discoveryData.count > 17 {
+            var payloadLength:UInt16 = 0
+            _ = discoveryData.copyBytes(to: UnsafeMutableBufferPointer(start: &payloadLength, count: 1), from: 17..<19)
+            
+            let payloadEnd = Int(19+payloadLength)
+            if discoveryData.count > 19, discoveryData.count >= payloadEnd {
+                discoveryInfo = JSON(data: discoveryData.subdata(in: 19..<payloadEnd))
+            }
         }
         
     }

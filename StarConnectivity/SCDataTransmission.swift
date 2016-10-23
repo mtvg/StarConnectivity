@@ -20,10 +20,14 @@ internal class SCDataTransmission: NSObject {
     
     private var lastPacketErrorCount = 0
     
-    func getNextPacket(repeatLastPacket:Bool=false) -> Data? {
+    func getNextPacket(repeatLastPacket:Bool=false, startOver:Bool=false) -> Data? {
         
         if repeatLastPacket {
             lastPacketErrorCount += 1
+            
+            if startOver {
+                lastTransmitedQueue?.bytesSent = 0
+            }
             
             if lastPacketErrorCount >= MAX_ERROR, let queue = lastTransmitedQueue {
                 queue.dataQueue.removeFirst()

@@ -26,8 +26,8 @@ public class SCBluetoothScanner : NSObject {
     
     private var availableCentrals = [ScannedCentral]()
     
-    public init(serviceToBrowse service:UUID) {
-        scannedCentralService = CBUUID(nsuuid: service)
+    public init(serviceToBrowse service:SCUUID) {
+        scannedCentralService = service
         
         cbCentralManager = CBCentralManager(delegate: nil, queue: DispatchQueue(label: "starConnectivity_bluetoothScannerQueue"), options: [CBPeripheralManagerOptionShowPowerAlertKey:true])
         super.init()

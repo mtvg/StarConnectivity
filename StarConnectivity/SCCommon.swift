@@ -29,5 +29,5 @@ public enum SCPriorityQueue:UInt8 {
     case priority00 = 0, priority01, priority02, priority03, priority04, priority05, priority06, priority07, priority08, priority09, priority10, priority11, priority12, priority13, priority14, priority15
 }
 
-//public typealias SCPriorityQueue = UInt8
+public typealias SCUUID = CBUUID
 

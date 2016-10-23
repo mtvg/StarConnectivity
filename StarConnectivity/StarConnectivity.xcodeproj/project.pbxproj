@@ -35,6 +35,8 @@
 		1438F96F1DA42F970069244B /* SCDataTransmission.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1438F9581DA42F970069244B /* SCDataTransmission.swift */; };
 		1438F9701DA42F970069244B /* SCDataReception.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1438F9591DA42F970069244B /* SCDataReception.swift */; };
 		1438F9711DA42F970069244B /* SCDataReception.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1438F9591DA42F970069244B /* SCDataReception.swift */; };
+		777C2F411DB9DB98003023C8 /* Int+Base95.swift in Sources */ = {isa = PBXBuildFile; fileRef = 777C2F401DB9DB98003023C8 /* Int+Base95.swift */; };
+		777C2F421DB9DB98003023C8 /* Int+Base95.swift in Sources */ = {isa = PBXBuildFile; fileRef = 777C2F401DB9DB98003023C8 /* Int+Base95.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -56,6 +58,7 @@
 		1438F9571DA42F970069244B /* SCPeer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SCPeer.swift; sourceTree = "<group>"; };
 		1438F9581DA42F970069244B /* SCDataTransmission.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SCDataTransmission.swift; sourceTree = "<group>"; };
 		1438F9591DA42F970069244B /* SCDataReception.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SCDataReception.swift; sourceTree = "<group>"; };
+		777C2F401DB9DB98003023C8 /* Int+Base95.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Int+Base95.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,6 +102,7 @@
 		1438F9271DA42E200069244B /* Ressources */ = {
 			isa = PBXGroup;
 			children = (
+				777C2F401DB9DB98003023C8 /* Int+Base95.swift */,
 				1438F94A1DA42F830069244B /* SwiftyJSON.swift */,
 				1438F9281DA42E200069244B /* StarConnectivity.h */,
 				1438F9291DA42E200069244B /* Info.plist */,
@@ -259,6 +263,7 @@
 				1438F95E1DA42F970069244B /* SCBluetoothScanner.swift in Sources */,
 				1438F96E1DA42F970069244B /* SCDataTransmission.swift in Sources */,
 				1438F95A1DA42F970069244B /* SCBluetoothAdvertiser.swift in Sources */,
+				777C2F411DB9DB98003023C8 /* Int+Base95.swift in Sources */,
 				1438F9681DA42F970069244B /* SCBluetoothPeripheralDelegate.swift in Sources */,
 				1438F95C1DA42F970069244B /* SCBluetoothAdvertiserDelegate.swift in Sources */,
 				1438F9621DA42F970069244B /* SCBluetoothCentral.swift in Sources */,
@@ -279,6 +284,7 @@
 				1438F95F1DA42F970069244B /* SCBluetoothScanner.swift in Sources */,
 				1438F96F1DA42F970069244B /* SCDataTransmission.swift in Sources */,
 				1438F95B1DA42F970069244B /* SCBluetoothAdvertiser.swift in Sources */,
+				777C2F421DB9DB98003023C8 /* Int+Base95.swift in Sources */,
 				1438F9691DA42F970069244B /* SCBluetoothPeripheralDelegate.swift in Sources */,
 				1438F95D1DA42F970069244B /* SCBluetoothAdvertiserDelegate.swift in Sources */,
 				1438F9631DA42F970069244B /* SCBluetoothCentral.swift in Sources */,

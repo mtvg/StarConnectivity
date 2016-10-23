@@ -24,8 +24,8 @@ public class SCBluetoothAdvertiser : NSObject {
     private var advertisingRequested = false
     private var serviceInitiated = false
     
-    public init(centralPeer peer:SCPeer, serviceUUID uuid: UUID) {
-        self.serviceUUID = CBUUID(nsuuid: uuid)
+    public init(centralPeer peer:SCPeer, serviceUUID uuid: SCUUID) {
+        self.serviceUUID = uuid
         self.peer = peer
         
         cbPeripheralManager = CBPeripheralManager(delegate: nil, queue: DispatchQueue(label: "starConnectivity_bluetoothAdvertiserQueue"), options: [CBPeripheralManagerOptionShowPowerAlertKey:true])
@@ -38,10 +38,10 @@ public class SCBluetoothAdvertiser : NSObject {
     
     private func generateUniqueBluetoothAdvertisingData() {
         // generating unique name for this advertising session, so Browser can distinguish multiple sessions from same device
-        var time = NSDate().timeIntervalSince1970
-        let timedata = String(NSData(bytes: &time, length: MemoryLayout<TimeInterval>.size).base64EncodedString(options: []).characters.dropLast())
         
-        advData = [CBAdvertisementDataLocalNameKey : "SC#"+timedata, CBAdvertisementDataServiceUUIDsKey : [serviceUUID]]
+        let time = Int(Date().timeIntervalSince(NSCalendar.current.startOfDay(for: Date()))*9)
+        
+        advData = [CBAdvertisementDataServiceUUIDsKey : [serviceUUID], CBAdvertisementDataLocalNameKey : "SC#"+time.toBase95()]
     }
     
     public func startAdvertising() {
