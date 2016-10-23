@@ -125,7 +125,7 @@ public class SCBluetoothCentral :NSObject {
                 isWriting = true
                 
                 outer.delegateQueue.async() {
-                    self.writeTimeout = Timer.scheduledTimer(timeInterval: 5.0, target: self, selector: #selector(self.writeDidTimout), userInfo: nil, repeats: false)
+                    self.writeTimeout = Timer.scheduledTimer(timeInterval: 2.0, target: self, selector: #selector(self.writeDidTimout), userInfo: nil, repeats: false)
                 }
             }
         }

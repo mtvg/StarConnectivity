@@ -95,8 +95,12 @@ public class SCBluetoothAdvertiser : NSObject {
         }
         
         func peripheralManager(_ peripheral: CBPeripheralManager, didReceiveRead request: CBATTRequest) {
-            request.value = outer.peer.discoveryData.subdata(in: request.offset..<outer.peer.discoveryData.count)
-            peripheral.respond(to: request, withResult: .success)
+            if outer.advertisingRequested {
+                request.value = outer.peer.discoveryData.subdata(in: request.offset..<outer.peer.discoveryData.count)
+                peripheral.respond(to: request, withResult: .success)
+            } else {
+                peripheral.respond(to: request, withResult: .attributeNotFound)
+            }
         }
     }
 
